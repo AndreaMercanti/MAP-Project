@@ -15,13 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import mining.KMeansMiner;
-import data.*;
-import database.DatabaseConnectionException;
-import database.NoValueException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+//import mining.KMeansMiner;
+//import data.*;
+//import database.DatabaseConnectionException;
+//import database.NoValueException;
+import java.io.*;
+import java.net.*;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import keyboardinput.Keyboard;
 
 /**
@@ -29,6 +31,10 @@ import keyboardinput.Keyboard;
  * @author Andrea Mercanti
  */
 public class MainTest {
+    /***Stream per ricevere dal server*/
+    private static ObjectInputStream in;
+    /***Stream per inviare al server*/
+    private static ObjectOutputStream out;
     /**
      * Menù di avvio per dare la possibilità all'utente di caricare i dati da un
      * database o da un file in locale.
@@ -58,11 +64,11 @@ public class MainTest {
      * @throws ClassNotFoundException nel caso in cui il percorso non indichi una 
      *                                cartella reale nel file system.
      */    
-    static KMeansMiner learningFromFile() throws FileNotFoundException, IOException, ClassNotFoundException{
+    static String learningFromFile() throws FileNotFoundException, IOException, ClassNotFoundException{
         String fileName = "";
         System.out.print("Nome archivio: ");
         fileName = Keyboard.readString();
-        return new KMeansMiner(fileName + ".dmp");
+        return fileName + ".dmp";
     }
     
     /**
@@ -70,64 +76,71 @@ public class MainTest {
      * @param args gli argomenti a linea di comando.
      */
     public static void main(String[] args) {
-        do{
-            int menuAnswer = menu();
-            switch(menuAnswer) {
-                case 1:
-                    try {
-                        KMeansMiner kmeans = learningFromFile();
-                        System.out.println(kmeans);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                case 2:
-                    Data data = null;
-                    try {
-                        data = new Data("playtennis");
-                    } catch (SQLException | NoValueException | DatabaseConnectionException ex) {
-                        ex.printStackTrace();
-                    }
-                    System.out.println(data);
-                    char answer = 'y';
-                    do {
-                        int k = 1;
-                        System.out.print("Inserisci k: ");
-                        k = Keyboard.readInt();
-                        KMeansMiner kmeans = new KMeansMiner(k);
-                        try {
-                            int numIter = kmeans.kmeans(data);
-                            System.out.println("Numero di Iterazioni: " + numIter);
-                            System.out.println(kmeans.getC().toString(data));
-                            System.out.print("Nome file di backup: ");
-                            String fileName = Keyboard.readString() + ".dmp";
-                            System.out.println("Salvataggio in " + fileName);
-                            try {
-                                kmeans.salva(fileName);
-                            } catch (FileNotFoundException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
-                            System.out.println("Fine operazioni di salvataggio!");
-                        } catch(OutOfRangeSampleSize e) {
-                            System.out.println(e.getMessage());
-                        }
-                        System.out.print("Vuoi ripetere l'esecuzione?(y/n) ");
-                        answer = Keyboard.readChar();
-                    } while(answer == 'y');
-                    break;
-                default:
-                    System.out.println("Opzione non valida!");
-            }
+        InetAddress addr;
+        Socket socket = null;
 
-            System.out.print("Vuoi scegliere una nuova operazione da menu?(y/n) ");
-            if(Keyboard.readChar() != 'y')
-                break;
-        } while(true);
+        try {
+            addr = InetAddress.getByName(null); 
+            socket = new Socket(addr, 8080);
+            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            out = new ObjectOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+            
+            do{
+                int menuAnswer = menu();
+                out.writeInt(menuAnswer);
+                switch(menuAnswer) {
+                    case 1:
+                        try {
+                            out.writeObject(learningFromFile());
+                            System.out.println(in.readObject());
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (IOException | ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 2:
+                        out.writeObject("playtennis");   //invia il nome della tabella da cui prelevare i dati
+                        
+                        char answer = 'y';
+                        do {
+                            System.out.print("Inserisci k: ");
+                            out.writeInt(Keyboard.readInt());
+                            try {
+                                //lettura risultato computazione
+                                System.out.println((String) in.readObject());
+                                System.out.println(in.readObject());
+                                
+                                System.out.print("Nome file di backup: ");
+                                String fileName = Keyboard.readString() + ".dmp";
+                                System.out.println("Salvataggio in " + fileName);
+                                out.writeObject(fileName);
+                                System.out.println((String) in.readObject());
+                            } catch(IOException | ClassNotFoundException e) {
+                                System.out.println(e.getMessage());
+                            }
+                            System.out.print("Vuoi ripetere l'esecuzione?(y/n) ");
+                            answer = Keyboard.readChar();
+                            out.writeObject(answer);
+                        } while(answer == 'y');
+                        break;
+                    default:
+                        System.out.println("Opzione non valida!");
+                }
+
+                System.out.print("Vuoi scegliere una nuova operazione da menu?(y/n) ");
+                if(Keyboard.readChar() != 'y')
+                    break;
+            } while(true);
+        }catch(IOException e) {
+            Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, e);
+        } finally {
+            try {
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
     }
 }

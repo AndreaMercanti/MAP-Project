@@ -1,3 +1,6 @@
+
+import com.sun.javafx.scene.DirtyBits;
+
 /*
  * Copyright (C) 2018 Andrea Mercanti 
  *
@@ -25,7 +28,7 @@ public class ServerException extends Exception {
      * <p>Costruisce l'eccezione con l'informazione riguardo la motivazione, così 
      * da poterla riportare all'utente se necessario.
      */
-    public ServerException() {
-        super("DA COMPLETARE");
+    public ServerException(Exception e) {
+        super(e.getMessage(), e.getCause());
     }
 }

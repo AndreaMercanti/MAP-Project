@@ -35,7 +35,7 @@ import mining.*;
 public class ServerOneClient extends Thread {
     /***Socket del client*/
     private Socket socket;
-    /***Stream per ricever dal client*/
+    /***Stream per ricevere dal client*/
     private ObjectInputStream in;
     /***Stream per inviare al client*/
     private ObjectOutputStream out;
@@ -61,40 +61,40 @@ public class ServerOneClient extends Thread {
     @Override
     public void run() {
         try {
-            PrintWriter out1 = new PrintWriter(socket.getOutputStream());
-            /*CASE 1: FETCHING DATA FROM FILE*/
+            do {
+                switch(in.readInt()) {
+                    case 1:     /*FETCHING DATA FROM FILE*/
+                        kmeans = new KMeansMiner((String) in.readObject());
+                        out.writeObject(kmeans);
+                        break;
+                    case 2:     /*MINING DATA FROM DB*/
+                        Data data = new Data((String) in.readObject());
 
-            /*CASE 2: MINING DATA FROM DB*/
-            Data data = null;
-            
-            try {
-                data = new Data((String) in.readObject());
-            } catch (SQLException | NoValueException | DatabaseConnectionException | 
-                    IOException | ClassNotFoundException ex) {
-//                out.writeBytes(ex.getMessage());
-            }
-            System.out.println(data);
+                        System.out.println(data);
 
-            KMeansMiner kmeans = new KMeansMiner(in.readInt());
-            try {
-                int numIter = kmeans.kmeans(data);
-                out.writeObject("Numero di Iterazioni: " + numIter);
-                out.writeObject(kmeans.getC().toString(data));
-                
-                String fileName = (String) in.readObject();
-                System.out.print("Nome file di backup: " + fileName);
-                System.out.println("Salvataggio in " + fileName);
-                try {
-                    kmeans.salva(fileName);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                        kmeans = new KMeansMiner(in.readInt());
+                        try {
+                            int numIter = kmeans.kmeans(data);
+                            out.writeObject("Numero di Iterazioni: " + numIter);
+                            out.writeObject(kmeans.getC().toString(data));
+
+                            String fileName = (String) in.readObject();
+                            System.out.print("Nome file di backup: " + fileName);
+                            System.out.println("Salvataggio in " + fileName);
+                            try {
+                                kmeans.salva(fileName);
+                            } catch (IOException e) {
+                                out.writeObject(e);
+                            }
+                            out.writeObject("Fine operazioni di salvataggio!");
+                        } catch(OutOfRangeSampleSize e) {
+                            out.writeObject(e);
+                        }
+                        break;
                 }
-                System.out.println("Fine operazioni di salvataggio!");
-            } catch(OutOfRangeSampleSize e) {
-                System.out.println(e.getMessage());
-            }
+            } while("y".equals((String)in.readObject()));
+        } catch(IOException | ClassNotFoundException | SQLException | NoValueException | DatabaseConnectionException ex) {
+            Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
                 socket.close();
