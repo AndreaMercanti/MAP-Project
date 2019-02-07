@@ -17,14 +17,20 @@
 
 package server;
 
-import data.*;
-import database.*;
-import java.io.*;
-import java.net.*;
+import data.Data;
+import data.OutOfRangeSampleSize;
+import database.DatabaseConnectionException;
+import database.NoValueException;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import mining.*;
+import mining.KMeansMiner;
 
 /**
  * <p>Classe che modella un canale di comunicazione riservato per un solo client,
@@ -34,7 +40,7 @@ import mining.*;
  */
 public class ServerOneClient extends Thread {
     /***Socket del client*/
-    private Socket socket;
+    private Socket c_socket;
     /***Stream per ricevere dal client*/
     private ObjectInputStream in;
     /***Stream per inviare al client*/
@@ -48,9 +54,11 @@ public class ServerOneClient extends Thread {
      * @throws IOException per un qualsiasi errore di input/output.
      */
     public ServerOneClient(Socket s) throws IOException {
-        socket = s;
-        in = new ObjectInputStream(new BufferedInputStream(s.getInputStream()));
-        out = new ObjectOutputStream(new BufferedOutputStream(s.getOutputStream()));
+        c_socket = s;
+        out = new ObjectOutputStream(new BufferedOutputStream(c_socket.getOutputStream()));
+        out.flush();
+        in = new ObjectInputStream(new BufferedInputStream(c_socket.getInputStream()));
+//        System.out.println("Starting dialog...");
         start();    //avvia il thread e chiama run()
     }
     
@@ -62,17 +70,24 @@ public class ServerOneClient extends Thread {
     public void run() {
         try {
             do {
-                switch(in.readInt()) {
+//                System.out.println("server.ServerOneClient.run()");
+                int menuAnswer = (Integer) in.readObject();
+//                synchronized(this){
+//                    while((menuAnswer = (Integer) in.readObject()) == 0) {                        
+//                        wait(5000);
+//                    }
+//                }
+                switch(menuAnswer) {
                     case 1:     /*FETCHING DATA FROM FILE*/
                         kmeans = new KMeansMiner((String) in.readObject());
                         out.writeObject(kmeans);
                         break;
                     case 2:     /*MINING DATA FROM DB*/
+//                        System.out.println("Receiving table's name");
                         Data data = new Data((String) in.readObject());
-
                         System.out.println(data);
 
-                        kmeans = new KMeansMiner(in.readInt());
+                        kmeans = new KMeansMiner((Integer) in.readObject());
                         try {
                             int numIter = kmeans.kmeans(data);
                             out.writeObject("Numero di Iterazioni: " + numIter);
@@ -95,9 +110,11 @@ public class ServerOneClient extends Thread {
             } while("y".equals((String)in.readObject()));
         } catch(IOException | ClassNotFoundException | SQLException | NoValueException | DatabaseConnectionException ex) {
             Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (InterruptedException ex) {
+//            Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
-                socket.close();
+                c_socket.close();
             } catch (IOException ex) {
                 Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
             }

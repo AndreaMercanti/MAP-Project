@@ -41,15 +41,14 @@ public class MultiServer {
         try {
             run();
         } catch (IOException ex) {
-//            ex.printStackTrace();
-            Logger.getLogger(MultiServer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MultiServer.class.getName()).log(Level.SEVERE, null, ex);  //oppure System.out.println(ex.getMessage())
         }
     }
 
     /**
      * <p>Metodo principale per l'esecuzione del file {@code MultiServer.java}, 
      * in cui viene semplicemente istanziato un oggetto di tipo MultiServer.
-     * @param args 
+     * @param args gli argomenti a linea di comando.
      */
     public static void main(String[] args) {
         MultiServer server2manyClients = new MultiServer(8080);
@@ -65,10 +64,12 @@ public class MultiServer {
         ServerSocket server = new ServerSocket(PORT);
         try {
             do {
+//                System.out.println("Listening...");
                 //si blocca su accept() fin quando non c'è una richiesta di connessione
                 Socket client = server.accept();    //connessione stabilita e recupero del riferimento alla client socket
+//                System.out.println("Accepted client " + client);
                 try {
-                    ServerOneClient channel = new ServerOneClient(client);
+                    new ServerOneClient(client);
                 } catch (IOException e) {
                     client.close(); //chiusura della connessione client
                 }

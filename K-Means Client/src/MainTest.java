@@ -31,10 +31,7 @@ import keyboardinput.Keyboard;
  * @author Andrea Mercanti
  */
 public class MainTest {
-    /***Stream per ricevere dal server*/
-    private static ObjectInputStream in;
-    /***Stream per inviare al server*/
-    private static ObjectOutputStream out;
+   
     /**
      * Menù di avvio per dare la possibilità all'utente di caricare i dati da un
      * database o da un file in locale.
@@ -76,18 +73,23 @@ public class MainTest {
      * @param args gli argomenti a linea di comando.
      */
     public static void main(String[] args) {
-        InetAddress addr;
+        InetAddress serverAddr;
         Socket socket = null;
-
+        ObjectInputStream in = null;    //Stream per ricevere dal server
+        ObjectOutputStream out = null;  //Stream per inviare al server
         try {
-            addr = InetAddress.getByName(null); 
-            socket = new Socket(addr, 8080);
-            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            serverAddr = InetAddress.getByName(null); 
+            socket = new Socket(serverAddr, 8080);  //create a client socket that connects to serverAddr at 8080
             out = new ObjectOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+            out.flush();
+//            System.out.println("Checkpoint 1");
+            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+//            System.out.println("Checkpoint 2");
+//            System.out.println("Starting dialog...");
             
             do{
                 int menuAnswer = menu();
-                out.writeInt(menuAnswer);
+                out.writeObject(menuAnswer);
                 switch(menuAnswer) {
                     case 1:
                         try {
@@ -100,24 +102,26 @@ public class MainTest {
                         }
                         break;
                     case 2:
+//                        System.out.println("Sending table's name...");
                         out.writeObject("playtennis");   //invia il nome della tabella da cui prelevare i dati
                         
                         char answer = 'y';
                         do {
                             System.out.print("Inserisci k: ");
-                            out.writeInt(Keyboard.readInt());
                             try {
+                                out.writeObject(Keyboard.readInt());
                                 //lettura risultato computazione
                                 System.out.println((String) in.readObject());
                                 System.out.println(in.readObject());
-                                
+                                //richiesta salvataggio risultato su file
                                 System.out.print("Nome file di backup: ");
                                 String fileName = Keyboard.readString() + ".dmp";
                                 System.out.println("Salvataggio in " + fileName);
                                 out.writeObject(fileName);
                                 System.out.println((String) in.readObject());
                             } catch(IOException | ClassNotFoundException e) {
-                                System.out.println(e.getMessage());
+                                Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, e);  //System.out.println(e.getMessage());
+                                break;
                             }
                             System.out.print("Vuoi ripetere l'esecuzione?(y/n) ");
                             answer = Keyboard.readChar();
@@ -141,6 +145,5 @@ public class MainTest {
                 e.printStackTrace();
             }
         }
-        
     }
 }
