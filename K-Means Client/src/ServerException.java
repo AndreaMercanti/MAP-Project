@@ -27,6 +27,7 @@ public class ServerException extends Exception {
     /**
      * <p>Costruisce l'eccezione con l'informazione riguardo la motivazione, così 
      * da poterla riportare all'utente se necessario.
+     * @param e l'eccezione sollevata e inviata dal server, da modellare
      */
     public ServerException(Exception e) {
         super(e.getMessage(), e.getCause());
