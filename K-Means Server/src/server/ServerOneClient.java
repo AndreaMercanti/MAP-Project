@@ -48,7 +48,9 @@ public class ServerOneClient extends Thread {
     
     /**
      * <p>Costruttore di classe. Inizializza gli attributi socket, in e out ed avvia il thread.
+     * 
      * @param s socket del client connesso.
+     * 
      * @throws IOException per un qualsiasi errore di input/output.
      */
     public ServerOneClient(Socket s) throws IOException {
