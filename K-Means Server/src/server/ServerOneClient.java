@@ -21,8 +21,6 @@ import data.Data;
 import data.OutOfRangeSampleSize;
 import database.DatabaseConnectionException;
 import database.NoValueException;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -55,11 +53,9 @@ public class ServerOneClient extends Thread {
      */
     public ServerOneClient(Socket s) throws IOException {
         c_socket = s;
-        out = new ObjectOutputStream(new BufferedOutputStream(c_socket.getOutputStream()));
-        out.flush();
-        in = new ObjectInputStream(new BufferedInputStream(c_socket.getInputStream()));
-//        System.out.println("Starting dialog...");
-        start();    //avvia il thread e chiama run()
+        out = new ObjectOutputStream(c_socket.getOutputStream());
+        in = new ObjectInputStream(c_socket.getInputStream());
+        super.start();    //avvia il thread e chiama run()
     }
     
     /**
@@ -70,20 +66,13 @@ public class ServerOneClient extends Thread {
     public void run() {
         try {
             do {
-//                System.out.println("server.ServerOneClient.run()");
                 int menuAnswer = (Integer) in.readObject();
-//                synchronized(this){
-//                    while((menuAnswer = (Integer) in.readObject()) == 0) {                        
-//                        wait(5000);
-//                    }
-//                }
                 switch(menuAnswer) {
                     case 1:     /*FETCHING DATA FROM FILE*/
                         kmeans = new KMeansMiner((String) in.readObject());
-                        out.writeObject(kmeans);
+                        out.writeObject(kmeans.toString());
                         break;
                     case 2:     /*MINING DATA FROM DB*/
-//                        System.out.println("Receiving table's name");
                         Data data = new Data((String) in.readObject());
                         System.out.println(data);
 
@@ -94,11 +83,12 @@ public class ServerOneClient extends Thread {
                             out.writeObject(kmeans.getC().toString(data));
 
                             String fileName = (String) in.readObject();
-                            System.out.print("Nome file di backup: " + fileName);
+                            System.out.println("Nome file di backup: " + fileName);
                             System.out.println("Salvataggio in " + fileName);
                             try {
                                 kmeans.salva(fileName);
                             } catch (IOException e) {
+                                Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, e);
                                 out.writeObject(e);
                             }
                             out.writeObject("Fine operazioni di salvataggio!");
@@ -107,11 +97,10 @@ public class ServerOneClient extends Thread {
                         }
                         break;
                 }
-            } while("y".equals((String)in.readObject()));
+                out.flush();
+            } while(((Character)in.readObject()) == 'y');
         } catch(IOException | ClassNotFoundException | SQLException | NoValueException | DatabaseConnectionException ex) {
             Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (InterruptedException ex) {
-//            Logger.getLogger(ServerOneClient.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
                 c_socket.close();
@@ -121,5 +110,4 @@ public class ServerOneClient extends Thread {
         }
         
     }
-    
 }

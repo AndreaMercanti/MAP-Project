@@ -80,12 +80,8 @@ public class MainTest {
         try {
             serverAddr = InetAddress.getByName(null); 
             socket = new Socket(serverAddr, 8080);  //create a client socket that connects to serverAddr at 8080
-            out = new ObjectOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-            out.flush();
-//            System.out.println("Checkpoint 1");
-            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
-//            System.out.println("Checkpoint 2");
-//            System.out.println("Starting dialog...");
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
             
             do{
                 int menuAnswer = menu();
@@ -96,13 +92,12 @@ public class MainTest {
                             out.writeObject(learningFromFile());
                             System.out.println(in.readObject());
                         } catch (FileNotFoundException e) {
-                            e.printStackTrace();
+                            Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, e);  //System.out.println(e.getMessage());
                         } catch (IOException | ClassNotFoundException e) {
-                            e.printStackTrace();
+                            Logger.getLogger(MainTest.class.getName()).log(Level.SEVERE, null, e);  //System.out.println(e.getMessage());
                         }
                         break;
                     case 2:
-//                        System.out.println("Sending table's name...");
                         out.writeObject("playtennis");   //invia il nome della tabella da cui prelevare i dati
                         
                         char answer = 'y';
@@ -131,9 +126,12 @@ public class MainTest {
                     default:
                         System.out.println("Opzione non valida!");
                 }
+                out.flush();
 
                 System.out.print("Vuoi scegliere una nuova operazione da menu?(y/n) ");
-                if(Keyboard.readChar() != 'y')
+                char decision = Keyboard.readChar();
+                out.writeObject(decision);
+                if(decision != 'y')
                     break;
             } while(true);
         }catch(IOException e) {
