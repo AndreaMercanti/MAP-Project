@@ -27,8 +27,9 @@ import java.io.Serializable;
  * @author Andrea Mercanti
  */
 public class ClusterSet implements Serializable{
+    /**Insieme dei cluster*/
     Cluster C[];
-    /**posizione valida per la memorizzazione di un nuovo cluster in C*/
+    /**Posizione valida per la memorizzazione di un nuovo cluster in C*/
     int i = 0;
     
     /**
@@ -134,7 +135,7 @@ public class ClusterSet implements Serializable{
     /**
      * <p>Restituisce la stringa che rappresenta lo stato dell'oggetto cioè lo
      * stato di ciascun cluster da cui è formato l'insieme.
-     * @param data tabella
+     * @param data tabella da cui recuperare la descrizione dei cluster.
      * @return la stringa modellante lo stato completo di ciascun cluster.
      */
     public String toString(Data data) {
