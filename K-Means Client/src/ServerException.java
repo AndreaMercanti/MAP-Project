@@ -27,6 +27,18 @@ public class ServerException extends Exception {
     /**
      * <p>Costruisce l'eccezione con l'informazione riguardo la motivazione, così 
      * da poterla riportare all'utente se necessario.
+     * 
+     * @param s la stringa contenente il messaggio di errore ricevuto dal server
+     */
+    public ServerException(String s) {
+        super(s);
+    }
+    
+    /**
+     * <p>Costruisce l'eccezione sulla base di una eccezione inoltrata dal server,
+     * definendo la tipologia di eccezione e la causa che l'ha causata, così 
+     * da poter riportare all'utente tutte le informazioni utili se necessario.
+     * 
      * @param e l'eccezione sollevata e inviata dal server, da modellare
      */
     public ServerException(Exception e) {
